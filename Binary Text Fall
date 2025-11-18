@@ -1,0 +1,55 @@
+function Show-MatrixBackground {
+    param(
+        [int]$DurationSeconds = 300
+    )
+    
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $endTime = $stopwatch.Elapsed.TotalSeconds + $DurationSeconds
+    
+    # Clear screen
+    Clear-Host
+    
+    # Set console properties
+    $Host.UI.RawUI.BackgroundColor = 'Black'
+    $Host.UI.RawUI.ForegroundColor = 'Green'
+    Clear-Host
+    
+    # Get console dimensions
+    $width = $Host.UI.RawUI.BufferSize.Width
+    $height = $Host.UI.RawUI.BufferSize.Height
+    
+    # Initialize column positions
+    $columns = @{}
+    for ($i = 0; $i -lt $width; $i++) {
+        $columns[$i] = Get-Random -Minimum 0 -Maximum $height
+    }
+    
+    while ($stopwatch.Elapsed.TotalSeconds -lt $endTime) {
+        for ($col = 0; $col -lt $width; $col++) {
+            $row = $columns[$col]
+            
+            # Randomly generate 1 or 0
+            $char = Get-Random -InputObject @('0', '1')
+            
+            # Write character at position
+            [Console]::SetCursorPosition($col, $row)
+            [Console]::Write($char)
+            
+            # Move to next row
+            $columns[$col]++
+            
+            # Reset if reached bottom
+            if ($columns[$col] -ge $height) {
+                $columns[$col] = 0
+            }
+        }
+        
+        Start-Sleep -Milliseconds 100
+    }
+    
+    Clear-Host
+    $Host.UI.RawUI.ForegroundColor = 'White'
+}
+
+# Run the Matrix background
+Show-MatrixBackground -DurationSeconds 1000000
