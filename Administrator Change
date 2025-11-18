@@ -1,0 +1,68 @@
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$Username
+)
+
+# Function to check if running as Administrator
+function Test-Administrator {
+    $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+# If not running as Administrator, restart with elevation
+if (-NOT (Test-Administrator)) {
+    Write-Host "Requesting Administrator privileges..." -ForegroundColor Cyan
+    $scriptPath = $MyInvocation.MyCommand.Path
+    $scriptArgs = "-Username `"$Username`""
+    
+    Start-Process PowerShell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $scriptArgs"
+    exit
+}
+
+# Check if user exists
+try {
+    $user = Get-LocalUser -Name $Username -ErrorAction Stop
+    Write-Host "✓ User '$Username' found" -ForegroundColor Green
+}
+catch {
+    Write-Host "✗ Error: User '$Username' does not exist" -ForegroundColor Red
+    exit 1
+}
+
+# Get the Administrators group
+try {
+    $adminGroup = Get-LocalGroup -Name "Administrators" -ErrorAction Stop
+}
+catch {
+    Write-Host "✗ Error: Could not find Administrators group" -ForegroundColor Red
+    exit 1
+}
+
+# Check if user is already an administrator
+$groupMembers = Get-LocalGroupMember -Group "Administrators" | Where-Object { $_.Name -match $Username }
+
+if ($groupMembers) {
+    Write-Host "⚠ User '$Username' is already an administrator" -ForegroundColor Yellow
+    Write-Host ""
+    Read-Host "Press Enter to exit"
+    exit 0
+}
+
+# Add user to Administrators group
+try {
+    Add-LocalGroupMember -Group "Administrators" -Member $Username -ErrorAction Stop
+    Write-Host "✓ User '$Username' has been added to the Administrators group" -ForegroundColor Green
+    Write-Host "✓ '$Username' is now an administrator" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Note: The user may need to log out and log back in for changes to take effect." -ForegroundColor Cyan
+    Write-Host ""
+    Read-Host "Press Enter to exit"
+}
+catch {
+    Write-Host "✗ Failed to add user '$Username' to Administrators group" -ForegroundColor Red
+    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host ""
+    Read-Host "Press Enter to exit"
+    exit 1
+}
