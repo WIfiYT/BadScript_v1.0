@@ -1,6 +1,6 @@
 function Show-MatrixBackground {
     param(
-        [int]$DurationSeconds = 300
+        [int]$DurationSeconds = 500
     )
     
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -44,7 +44,7 @@ function Show-MatrixBackground {
             }
         }
         
-        Start-Sleep -Milliseconds 100
+        Start-Sleep -Milliseconds 300
     }
     
     Clear-Host
